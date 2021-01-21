@@ -1,134 +1,110 @@
-# King County House Price Modeling 2015
+# Pump it Up: Data Mining the Water Table
 ## Summary and Recommendations
-Data from King County, WA house sales from May 2014 to May 2015 was obtained. A multi-variate linear regression model were fit for each zipcode to obtain the best model.
+https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/
 
-![](./images/Price.PNG)
-
-After analyzing the data from the various resources, the following conclusions and recommendations are made:
-1. Expand above ground square
-footage.
-2. Improve condition.
-3. Improve grade.
+After analyzing the data , the following conclusions and recommendations are made:
+1. Build a simpler model while real time updates the model. Could train multiple simple model based on date intervals as well.
+2. Develop a categorical random forest library and visualization tools to further invest the correlation of “functional”, “functional needs repair”, and “non functional”. This can also help with the root cause investigation and physical prevention method development of the water pumps and wells.
+3. The goal should be lower the false “functional” rate, since this slows the true “non functional” or “functional needs repair” replacement or repair process.
 
 ## Repository Files Organization
 - presentation.pdf: the presentation slides for non-technical presentation.
 - main.ipynb: the main Jupyter Notebook containing the data exploration and analysis.
-- raw_data: folder containing the movie raw data.
+- data: folder containing the movie raw data.
 - images: folder containing images used for README.md
 
 ## Data
-**Data Columns:**
-- id - unique identified for a house
-- dateDate - house was sold
-- pricePrice - is prediction target
-- bedroomsNumber - of Bedrooms/House
-- bathroomsNumber - of bathrooms/bedrooms
-- sqft_livingsquare - footage of the home
-- sqft_lotsquare - footage of the lot
-- floorsTotal - floors (levels) in house
-- waterfront - House which has a view to a waterfront
-- view - Has been viewed
-- condition - How good the condition is ( Overall )
-- grade - overall grade given to the housing unit, based on King County grading system
-- sqft_above - square footage of house apart from basement
-- sqft_basement - square footage of the basement
-- yr_built - Built Year
-- yr_renovated - Year when house was renovated
-- zipcode - zip
-- lat - Latitude coordinate
-- long - Longitude coordinate
-- sqft_living15 - The square footage of interior housing living space for the nearest 15 neighbors
-- sqft_lot15 - The square footage of the land lots of the nearest 15 neighbors
+**Features:**
+- amount_tsh - Total static head (amount water available to waterpoint)
+- date_recorded - The date the row was entered
+- funder - Who funded the well
+- gps_height - Altitude of the well
+- installer - Organization that installed the well
+- longitude - GPS coordinate
+- latitude - GPS coordinate
+- wpt_name - Name of the waterpoint if there is one
+- num_private -
+- basin - Geographic water basin
+- subvillage - Geographic location
+- region - Geographic location
+- region_code - Geographic location (coded)
+- district_code - Geographic location (coded)
+- lga - Geographic location
+- ward - Geographic location
+- population - Population around the well
+- public_meeting - True/False
+- recorded_by - Group entering this row of data
+- scheme_management - Who operates the waterpoint
+- scheme_name - Who operates the waterpoint
+- permit - If the waterpoint is permitted
+- construction_year - Year the waterpoint was constructed
+- extraction_type - The kind of extraction the waterpoint uses
+- extraction_type_group - The kind of extraction the waterpoint uses
+- extraction_type_class - The kind of extraction the waterpoint uses
+- management - How the waterpoint is managed
+- management_group - How the waterpoint is managed
+- payment - What the water costs
+- payment_type - What the water costs
+- water_quality - The quality of the water
+- quality_group - The quality of the water
+- quantity - The quantity of water
+- quantity_group - The quantity of water
+- source - The source of the water
+- source_type - The source of the water
+- source_class - The source of the water
+- waterpoint_type - The kind of waterpoint
+- waterpoint_type_group - The kind of waterpoint
 
-**Vocab: Condition:**
+**Labels**
+- functional - the waterpoint is operational and there are no repairs needed
+- functional needs repair - the waterpoint is operational, but needs repairs
+- non functional - the waterpoint is not operational
 
-Relative to age and grade. Coded 1-5.
+**Uniqueness**
 
-1 = Poor- Worn out. Repair and overhaul needed on painted surfaces, roofing, plumbing, heating and numerous functional inadequacies. Excessive deferred maintenance and abuse, limited value-in-use, approaching abandonment or major reconstruction; reuse or change in occupancy is imminent. Effective age is near the end of the scale regardless of the actual chronological age.
 
-2 = Fair- Badly worn. Much repair needed. Many items need refinishing or overhauling, deferred maintenance obvious, inadequate building utility and systems all shortening the life expectancy and increasing the effective age.
+High fraction means the category has higher chance of self-identifying tendencies.
+![](./images/uniqueness.png)
 
-3 = Average- Some evidence of deferred maintenance and normal obsolescence with age in that a few minor repairs are needed, along with some refinishing. All major components still functional and contributing toward an extended life expectancy. Effective age and utility is standard for like properties of its class and usage.
+## Model
+Random Forest is the best model when using default sklearn values:
 
-4 = Good- No obvious maintenance required but neither is everything new. Appearance and utility are above the standard and the overall effective age will be lower than the typical property.
+![](./images/model_selection.png)
 
-5= Very Good- All items well maintained, many having been overhauled and repaired as they have shown signs of wear, increasing the life expectancy and lowering the effective age with little deterioration or obsolescence evident with a high degree of utility.
+Multiple random forests are made using different settings on the Recursive Feature Elimination  algorithm and the features are ranked. The boxplot shows statistic summary of the ranking:
 
-**Vocab: Grade:**
+![](./images/drop_self_identifying.png)
 
-Represents the construction quality of improvements. Grades run from grade 1 to 13. Generally defined as:
+- AUC score of Random Forests with different start_feature and top_n_features are ploted.
+- Note that it that the best ranked feature may not guarantee the best AUC score.
+- Also note that lower top_n_features used may not necessarily be the worse performance model. 
 
-1-3 Falls short of minimum building standards. Normally cabin or inferior structure.
+![](./images/drop_self_identifying_auc.png)
+![](./images/feature_selection_auc.png)
 
-4 Generally older, low quality construction. Does not meet code.
 
-5 Low construction costs and workmanship. Small, simple design.
+- Settings: start_feature=15, max_features=6, n_estimators=2. Selected to be simple to prove model performance doesn’t require extreme complexity.
+  - AUC = 0.82
+- It is most critical that when true “non functional” is predicted to “functional”.
+- Also critical when true “functional needs repair” and predicted to be “functional”
+- True Label Percentage:
+  - This plot adds up to 1 row-wise.
+  -21% of true “non-functional” will be predicted to be “functional” by the model. 12% true “functional needs repair” will be predicted to be “functional”.
+- Prediction Label Percentage:
+  -This plot adds up to 1 column-wise.
+  -16% of predicted “functional” will be predicted to be true “non functional” by the model. 24% predicted “functional needs repair” will be predicted to be “non functional”.
+![](./images/simple_pred.png)
+![](./images/simple_true.png)
 
-6 Lowest grade currently meeting building code. Low quality materials and simple designs.
+- test_score = AUC
+- Random Forest Models are iterated over:
+  - n_estimators
+  - max_features
+- Performance doesn’t improve much over simpler models.
+![](./images/auc_max_features_dropped.png)
+![](./images/auc_n_estimators_dropped.png)
 
-7 Average grade of construction and design. Commonly seen in plats and older sub-divisions.
-
-8 Just above average in construction and design. Usually better materials in both the exterior and interior finish work.
-
-9 Better architectural design with extra interior and exterior design and quality.
-
-10 Homes of this quality generally have high quality features. Finish work is better and more design quality is seen in the floor plans. Generally have a larger square footage.
-
-11 Custom design and higher quality finish work with added amenities of solid woods, bathroom fixtures and more luxurious options.
-
-12 Custom design and excellent builders. All materials are of the highest quality and all conveniences are present.
-
-13 Generally custom designed and built. Mansion level. Large amount of highest quality cabinet work, wood trim, marble, entry ways etc.
-
-## Model Fit
-Target:
-- Price
-
-Features:
-- bedrooms
-- bathrooms
-- waterfront
-- view 
-- condition
-- sqft_above
-- sqft_basement
-- sqft_lot,
-- age (as of 2015)
-
-The model fits pretty well considering coefficients of determination for each zipcode (note that some zipcodes are combined in the data, hence same color across someborders):
-![](./images/R2.PNG)
-
-The regression coefficients:
-![](./images/Coeff1.PNG)
-
-The waterfront coefficient is very large in comparison to the others. Here's one without waterfront:
-![](./images/Coeff2.PNG)
-
-The following features increase house sales value:
-- Bathrooms
-- Waterfront
-- Condition
-- Grade
-- Square footage
-The following features decrease house sales value:
-- Bedrooms
-- Floors
-- Age
-
-## Recommendations
-- Expand above ground square
-footage.
-- Improve condition.
-- Improve grade.
-
-## Combined House Prices and Regression Coefficient of Determination Plot
-This plot shows visually around how many data points, and water the prices are like in each zipcode and its model's coefficient of determination.
-
-Note that some zipcodes are combined in the data, hence same color across someborders.
-![](./images/Both.PNG)
-
-## Future Work
-1. Create a continuously updated model
-2. Add neighborhood to features
-3. Add sale type to features, i.e. foreclosure, sale by owner, sale by agent.
-4. Add house type to features, i.e. co-op, condo, single family home, multi-family hole, HOA, etc.
+## Recommendations and Future Work
+1. Build a simpler model while real time updates the model. Could train multiple simple model based on date intervals as well.
+2. Develop a categorical random forest library and visualization tools to further invest the correlation of “functional”, “functional needs repair”, and “non functional”. This can also help with the root cause investigation and physical prevention method development of the water pumps and wells.
+3. The goal should be lower the false “functional” rate, since this slows the true “non functional” or “functional needs repair” replacement or repair process.
