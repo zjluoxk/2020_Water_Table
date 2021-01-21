@@ -1,4 +1,7 @@
 # Pump it Up: Data Mining the Water Table
+
+**Note that the description for plots and graphs are usually above the plot and graph.**
+
 ## Summary and Recommendations
 https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/
 
